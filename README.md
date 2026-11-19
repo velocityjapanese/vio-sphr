@@ -1,6 +1,6 @@
 # ViolinSpheric (`vio-sphr`)
 
-**Repository:** https://github.com/kreggscode/vio-sphr
+**Repository:** https://github.com/velocityjapanese/vio-sphr
 **Channel:** https://www.youtube.com/channel/UCWODeubE_VQ4Wyrk1zwLEVA
 **Schedule:** daily at 08:00 UTC (one original suite per run)
 
@@ -94,7 +94,7 @@ Once `gh` is logged in to the account that owns the repo:
 
 ```bash
 python scripts/set_secrets.py \
-  --repo kreggscode/vio-sphr \
+  --repo velocityjapanese/vio-sphr \
   --token-json "C:\Users\<you>\.secrets\vio_sphr_oauth.json"
 ```
 
@@ -131,17 +131,17 @@ python publish_youtube.py --validate
 
 ```bash
 gh auth login                       # pick the account that owns the repo
-gh repo create kreggscode/vio-sphr --public --source . --remote origin --push
+gh repo create velocityjapanese/vio-sphr --public --source . --remote origin --push
 ```
 
 If the repository already exists:
 
 ```bash
-git remote add origin https://github.com/kreggscode/vio-sphr.git
+git remote add origin https://github.com/velocityjapanese/vio-sphr.git
 git push -u origin main
 ```
 
-To publish under a different account, replace `kreggscode` with that account's
+To publish under a different account, replace `velocityjapanese` with that account's
 name and authenticate it with `gh auth login` first. Choose `--private` instead
 of `--public` if you want the code hidden; GitHub Actions minutes for private
 repositories are metered.
@@ -172,13 +172,13 @@ The same emblem is used in every video's corner watermark and in thumbnails.
 
 ```bash
 # Render only, no uploads
-gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f dry_run=true -f duration_minutes=10
+gh workflow run daily_violin.yml --repo velocityjapanese/vio-sphr -f dry_run=true -f duration_minutes=10
 
 # 3-second render smoke test
-gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f upload_youtube=false -f smoke=true
+gh workflow run daily_violin.yml --repo velocityjapanese/vio-sphr -f upload_youtube=false -f smoke=true
 
 # Publish one video now (10 minutes keeps unverified channels inside the limit)
-gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f upload_youtube=true -f duration_minutes=10
+gh workflow run daily_violin.yml --repo velocityjapanese/vio-sphr -f upload_youtube=true -f duration_minutes=10
 ```
 
 Publishing is live by default: the cron job uploads every day at 08:00 UTC.

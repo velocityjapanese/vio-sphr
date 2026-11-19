@@ -5,7 +5,7 @@ and pipes each one straight into `gh secret set`. Secret values never touch
 this script's stdout, the chat, or the repository.
 
 Usage:
-    python scripts/set_secrets.py --repo kreggscode/vio-sphr \
+    python scripts/set_secrets.py --repo velocityjapanese/vio-sphr \
         --token-json "C:\\Users\\you\\Downloads\\client_secret_xxx.json"
 
 Optional environment variables are forwarded when present:
@@ -56,7 +56,7 @@ def set_secret(repo, name, value, dry_run=False):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--repo", required=True, help="owner/name, e.g. kreggscode/vio-sphr")
+    ap.add_argument("--repo", required=True, help="owner/name, e.g. velocityjapanese/vio-sphr")
     ap.add_argument("--token-json", required=True, help="path to the downloaded OAuth client JSON")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
