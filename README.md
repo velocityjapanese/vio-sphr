@@ -1,5 +1,7 @@
 # ViolinSpheric (`vio-sphr`)
 
+**Repository:** https://github.com/kreggscode/vio-sphr
+
 A fully automated, daily long-form music channel: every run composes a brand-new
 original violin + piano suite, renders it in 1080p with a photoreal violin whose
 strings and bow follow the performance, builds a 1280x720 thumbnail from a real
@@ -90,7 +92,7 @@ Once `gh` is logged in to the account that owns the repo:
 
 ```bash
 python scripts/set_secrets.py \
-  --repo velocityjapanese/vio-sphr \
+  --repo kreggscode/vio-sphr \
   --token-json "C:\Users\<you>\.secrets\vio_sphr_oauth.json"
 ```
 
@@ -126,29 +128,41 @@ python publish_youtube.py --validate
 ## Create / push the repository
 
 ```bash
-gh auth login                       # pick the velocityjapanese account
-gh repo create velocityjapanese/vio-sphr --public --source . --remote origin --push
+gh auth login                       # pick the account that owns the repo
+gh repo create kreggscode/vio-sphr --public --source . --remote origin --push
 ```
 
 If the repository already exists:
 
 ```bash
-git remote add origin https://github.com/velocityjapanese/vio-sphr.git
+git remote add origin https://github.com/kreggscode/vio-sphr.git
 git push -u origin main
 ```
 
-Choose `--private` instead of `--public` if you want the code hidden. Note that
-GitHub Actions minutes for private repositories are metered.
+To publish under a different account, replace `kreggscode` with that account's
+name and authenticate it with `gh auth login` first. Choose `--private` instead
+of `--public` if you want the code hidden; GitHub Actions minutes for private
+repositories are metered.
 
-## Channel branding (manual, one time)
+## Channel branding
 
-YouTube's API cannot set the avatar or banner, so upload these in YouTube Studio:
+The banner and the channel description/keywords can be applied with the API:
 
-- `branding/channel_avatar_800.png` → Profile picture
-- `branding/channel_banner_2048x1152.jpg` → Banner image
-- `branding/channel_description.txt` → About / description
-- `branding/channel_keywords.txt` → Channel keywords (Settings → Channel →
-  Basic info)
+```bash
+python scripts/update_channel_branding.py \
+  --token-json "C:\Users\<you>\.secrets\vio_sphr_oauth.json" \
+  --confirm-channel ViolinSpheric --apply
+```
+
+This uploads `branding/channel_banner_2048x1152.jpg`, sets
+`branding/channel_description.txt`, and sets `branding/channel_keywords.txt`.
+The script aborts unless the authenticated channel's title matches
+`--confirm-channel`, so it cannot overwrite another channel.
+
+YouTube has no API for the profile picture, so upload
+`branding/channel_avatar_800.png` once in YouTube Studio → Customisation →
+Branding. The same emblem is used in every video's corner watermark and in
+thumbnails.
 
 The same emblem is used in every video's corner watermark and in thumbnails.
 
