@@ -149,10 +149,10 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
         pal_name = section["palette"]
     pal = palette(pal_name)
 
-    img = Image.open(hero_path).convert("RGB")
-    scale = max(TW / img.width, TH / img.height)
-    img = img.resize((int(img.width * scale + 0.5), int(img.height * scale + 0.5)),
-                     Image.Resampling.LANCZOS)
+    full = Image.open(hero_path).convert("RGB")
+    scale = max(TW / full.width, TH / full.height)
+    img = full.resize((int(full.width * scale + 0.5), int(full.height * scale + 0.5)),
+                      Image.Resampling.LANCZOS)
     left = (img.width - TW) // 2
     top = (img.height - TH) // 2
     img = img.crop((left, top, left + TW, top + TH))
@@ -175,8 +175,10 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     scrim.putalpha(Image.fromarray(alpha.astype(np.uint8)))
     overlay.alpha_composite(scrim)
 
-    # The render bakes a sheet-music panel into the upper right. Fade it out
-    # so nothing competes with the kicker and title.
+    # The render bakes a sheet-music panel into the upper right. Fade most of
+    # it out so the corner mark never competes with the branding, then bring
+    # the score itself back as a crisp card (visible sheet music sells the
+    # "this is real music" feeling).
     sheet_mask = Image.new("L", (TW, TH), 0)
     ImageDraw.Draw(sheet_mask).rounded_rectangle((620, -110, 1360, 345), radius=90, fill=252)
     sheet_mask = sheet_mask.filter(ImageFilter.GaussianBlur(62))
@@ -201,6 +203,43 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     patch[..., 0:3] = (5, 7, 12)
     patch[..., 3] = (250 * ay[:, None] * ax[None, :]).astype(np.uint8)
     overlay.alpha_composite(Image.fromarray(patch, "RGBA"), (0, 0))
+
+    # Original score card: crop the engraved staves straight from the
+    # full-resolution frame, lift the contrast, and present them as a framed
+    # card above the title column.
+    CARD_X, CARD_Y, CARD_W = 358, 92, 810
+    src = full.crop((int(full.width * 0.515), int(full.height * 0.088),
+                     int(full.width * 0.96), int(full.height * 0.28)))
+    card_h = int(round(src.height * CARD_W / src.width))
+    src = src.resize((CARD_W, card_h), Image.Resampling.LANCZOS)
+    src = ImageEnhance.Brightness(src).enhance(1.38)
+    src = ImageEnhance.Contrast(src).enhance(1.3)
+
+    card_mask = Image.new("L", (CARD_W, card_h), 0)
+    ImageDraw.Draw(card_mask).rounded_rectangle((0, 0, CARD_W - 1, card_h - 1),
+                                                radius=20, fill=255)
+    shadow = Image.new("RGBA", (CARD_W + 60, card_h + 60), (0, 0, 0, 0))
+    ImageDraw.Draw(shadow).rounded_rectangle((30, 36, CARD_W + 30, card_h + 36),
+                                             radius=22, fill=(0, 0, 0, 165))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(16))
+    overlay.alpha_composite(shadow, (CARD_X - 30, CARD_Y - 30))
+
+    card = Image.new("RGBA", (CARD_W, card_h), (0, 0, 0, 0))
+    card.paste(src, (0, 0), mask=card_mask)
+    ImageDraw.Draw(card).rounded_rectangle((0, 0, CARD_W - 1, card_h - 1), radius=20,
+                                           outline=tuple(pal["accent"]) + (150,), width=2)
+    overlay.alpha_composite(card, (CARD_X, CARD_Y))
+
+    score_chip = "ORIGINAL SCORE"
+    f_chip = load_font("sans", 14)
+    chip_w = int(draw.textlength(score_chip, font=f_chip)) + 22
+    cx0 = CARD_X + CARD_W - chip_w - 14
+    cy0 = CARD_Y + card_h - 38
+    draw.rounded_rectangle((cx0, cy0, cx0 + chip_w, cy0 + 26), radius=7,
+                           fill=(8, 10, 16, 225),
+                           outline=tuple(pal["accent"]) + (150,), width=1)
+    draw.text((cx0 + 11, cy0 + 6), score_chip, font=f_chip,
+              fill=tuple(pal["accent"]) + (255,))
 
     hook = dict(_build_hook(meta, minutes))
     if hook_dict:
@@ -248,7 +287,7 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     # Kicker -----------------------------------------------------------------
     f_kicker = load_font("sans", 17)
     kicker = hook.get("kicker", "VIOLIN & PIANO SUITE")
-    ky = 246
+    ky = CARD_Y + card_h + 16
     kw = int(draw.textlength(kicker, font=f_kicker)) + 30
     draw.rounded_rectangle((TEXT_X, ky, TEXT_X + kw, ky + 34), radius=8,
                            fill=tuple(pal["accent"]) + (238,))
