@@ -183,6 +183,15 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     sheet = Image.new("RGBA", (TW, TH), (4, 6, 11, 255))
     sheet.putalpha(sheet_mask)
     overlay.alpha_composite(sheet)
+
+    # The panel's header sits in empty stage above the violin; mask that top
+    # strip fully so no baked title text survives the scrim.
+    strip = np.zeros((TH, TW, 4), dtype=np.uint8)
+    sx = np.clip((xx - 520.0) / 80.0, 0, 1)
+    sy = np.clip((135.0 - yy) / 60.0, 0, 1)
+    strip[..., 0:3] = (5, 7, 12)
+    strip[..., 3] = (250 * sx * sy).astype(np.uint8)
+    overlay.alpha_composite(Image.fromarray(strip, "RGBA"))
     draw = ImageDraw.Draw(overlay)
 
     # Hide the channel mark baked into the hero frame behind our brand row.
