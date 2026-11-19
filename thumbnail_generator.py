@@ -231,14 +231,14 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     overlay.alpha_composite(card, (CARD_X, CARD_Y))
 
     score_chip = "ORIGINAL SCORE"
-    f_chip = load_font("sans", 14)
-    chip_w = int(draw.textlength(score_chip, font=f_chip)) + 22
-    cx0 = CARD_X + CARD_W - chip_w - 14
-    cy0 = CARD_Y + card_h - 38
-    draw.rounded_rectangle((cx0, cy0, cx0 + chip_w, cy0 + 26), radius=7,
+    f_chip = load_font("sans", 12)
+    chip_w = int(draw.textlength(score_chip, font=f_chip)) + 18
+    cx0 = CARD_X + CARD_W - chip_w - 12
+    cy0 = CARD_Y + card_h - 30
+    draw.rounded_rectangle((cx0, cy0, cx0 + chip_w, cy0 + 21), radius=6,
                            fill=(8, 10, 16, 225),
                            outline=tuple(pal["accent"]) + (150,), width=1)
-    draw.text((cx0 + 11, cy0 + 6), score_chip, font=f_chip,
+    draw.text((cx0 + 9, cy0 + 4), score_chip, font=f_chip,
               fill=tuple(pal["accent"]) + (255,))
 
     hook = dict(_build_hook(meta, minutes))
