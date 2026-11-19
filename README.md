@@ -168,6 +168,22 @@ thumbnails.
 
 The same emblem is used in every video's corner watermark and in thumbnails.
 
+## Manual runs
+
+```bash
+# Render only, no uploads
+gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f dry_run=true -f duration_minutes=10
+
+# 3-second render smoke test
+gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f upload_youtube=false -f smoke=true
+
+# Publish one video now (10 minutes keeps unverified channels inside the limit)
+gh workflow run daily_violin.yml --repo kreggscode/vio-sphr -f upload_youtube=true -f duration_minutes=10
+```
+
+Publishing is live by default: the cron job uploads every day at 08:00 UTC.
+Use `-f upload_youtube=false` if you want a render-only day.
+
 ## Publishing behavior
 
 - New YouTube channels can only upload videos up to 15 minutes until phone
