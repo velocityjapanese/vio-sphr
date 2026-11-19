@@ -1,0 +1,205 @@
+name: ViolinSpheric Daily Long-Form Automation
+
+on:
+  schedule:
+    # Daily at 08:00 UTC (midnight Pacific), when YouTube's upload quota
+    # resets. The upload happens well into the run, safely after it.
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      upload_youtube:
+        description: 'Upload to YouTube? (auto = daily, true = force yes, false = force skip)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - 'true'
+          - 'false'
+      duration_minutes:
+        description: 'Target video duration in minutes (default: 15)'
+        required: false
+        default: '15'
+      dry_run:
+        description: 'Render + thumbnail + SEO only, skip every upload'
+        required: false
+        default: false
+        type: boolean
+      smoke:
+        description: 'Run the 3-second render smoke test only'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+concurrency:
+  group: violinspheric-daily
+  cancel-in-progress: false
+
+jobs:
+  publish-violin-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    env:
+      YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+      YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+      YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+      YOUTUBE_CLIENT_ID: ${{ secrets.YOUTUBE_CLIENT_ID }}
+      YOUTUBE_CLIENT_SECRET: ${{ secrets.YOUTUBE_CLIENT_SECRET }}
+      YOUTUBE_REFRESH_TOKEN: ${{ secrets.YOUTUBE_REFRESH_TOKEN }}
+      POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
+      CHANNEL_NAME: ${{ secrets.CHANNEL_NAME }}
+      FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
+      FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+      FACEBOOK_PAGE_ID: ${{ secrets.FACEBOOK_PAGE_ID }}
+      FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install system dependencies
+        timeout-minutes: 10
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fluidsynth fluid-soundfont-gm xz-utils
+
+      - name: Cache soundfonts
+        uses: actions/cache@v4
+        with:
+          path: |
+            soundfonts/MuseScore_General.sf3
+            soundfonts/SalamanderGrandPiano.sf2
+          key: violin-soundfonts-v1-musescore-20200602-salamander-20200602
+
+      - name: Download soundfonts (if not cached)
+        timeout-minutes: 30
+        run: |
+          set -u
+          mkdir -p soundfonts
+
+          if [ -s soundfonts/MuseScore_General.sf3 ]; then
+            echo "Using cached MuseScore_General violin soundfont."
+          else
+            URL="https://ftp.osuosl.org/pub/musescore/soundfont/MuseScore_General/MuseScore_General.sf3"
+            if curl -L --fail --retry 3 --retry-delay 5 -o soundfonts/MuseScore_General.sf3.tmp "$URL" \
+               && [ "$(stat -c%s soundfonts/MuseScore_General.sf3.tmp)" -gt 10485760 ]; then
+              mv soundfonts/MuseScore_General.sf3.tmp soundfonts/MuseScore_General.sf3
+            else
+              rm -f soundfonts/MuseScore_General.sf3.tmp
+              echo "::warning::MuseScore_General download failed; falling back to FluidR3_GM."
+              cp /usr/share/sounds/sf2/FluidR3_GM.sf2 soundfonts/FluidR3_GM.sf2 || true
+            fi
+          fi
+
+          if [ -s soundfonts/SalamanderGrandPiano.sf2 ]; then
+            echo "Using cached Salamander piano soundfont."
+          else
+            URL="https://freepats.zenvoid.org/Piano/SalamanderGrandPiano/SalamanderGrandPiano-SF2-V3+20200602.tar.xz"
+            if curl -L --fail --retry 3 --retry-delay 5 -o /tmp/salamander.tar.xz "$URL" \
+               && mkdir -p /tmp/sf2 \
+               && tar -xJf /tmp/salamander.tar.xz -C /tmp/sf2; then
+              SRC="$(find /tmp/sf2 -iname '*.sf2' -printf '%s %p\n' | sort -nr | head -n1 | cut -d' ' -f2-)"
+              if [ -n "$SRC" ] && [ "$(stat -c%s "$SRC")" -gt 52428800 ]; then
+                cp "$SRC" soundfonts/SalamanderGrandPiano.sf2
+              else
+                echo "::warning::Salamander archive had no usable piano; the violin bank covers the piano stem."
+              fi
+            else
+              echo "::warning::Salamander download failed; the violin bank covers the piano stem."
+            fi
+          fi
+
+          ls -lh soundfonts/
+
+      - name: Install Python dependencies
+        timeout-minutes: 10
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Check YouTube upload schedule (daily)
+        id: schedule_check
+        run: |
+          choice="${{ github.event.inputs.upload_youtube }}"
+          if [ "$choice" = "false" ]; then
+            should=false
+            echo "Manual override: YouTube forced to FALSE"
+          else
+            should=true
+            if [ "$choice" = "true" ]; then
+              echo "Manual override: YouTube forced to TRUE"
+            else
+              echo "Daily schedule: YouTube upload ENABLED"
+            fi
+          fi
+          echo "should_upload=$should" >> "$GITHUB_OUTPUT"
+          if [ "$should" = "true" ] && [ -z "${YOUTUBE_REFRESH_TOKEN}${YT_REFRESH_TOKEN}" ]; then
+            echo "::error::YouTube upload is due but no refresh token secret is configured."
+            exit 1
+          fi
+
+      - name: Render smoke test
+        if: ${{ github.event.inputs.smoke == 'true' }}
+        timeout-minutes: 15
+        run: python bot.py --smoke --seed 42
+
+      - name: Run automation pipeline
+        if: ${{ github.event.inputs.smoke != 'true' }}
+        timeout-minutes: 100
+        env:
+          UPLOAD_YOUTUBE: ${{ steps.schedule_check.outputs.should_upload }}
+          # Bound the resumable upload so a stalled connection fails in
+          # minutes instead of hanging until the job timeout.
+          PIA_YT_UPLOAD_TIMEOUT_SEC: '900'
+          PIA_YT_MAX_CHUNKS: '200'
+        run: |
+          mins="${{ github.event.inputs.duration_minutes }}"
+          if [ -z "$mins" ]; then mins="15"; fi
+          extra=""
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then extra="--dry-run"; fi
+          echo "Starting ViolinSpheric ${mins}-minute pipeline..."
+          python auto_pipeline.py --minutes "$mins" $extra
+
+      - name: Upload preview artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: violin-preview-${{ github.run_id }}
+          path: |
+            output/*_hero.jpg
+            output/thumb_*.jpg
+            output/*_chapters.txt
+            output/_smoke_frame.jpg
+            output/ViolinSpheric_*.mp4
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Commit published videos log
+        if: always()
+        run: |
+          if [ ! -f published_videos.json ]; then
+            echo "No published_videos.json produced; nothing to commit."
+            exit 0
+          fi
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add published_videos.json
+          if git diff --cached --quiet; then
+            echo "No changes to published_videos.json to commit."
+          else
+            git commit -m "chore: update published videos log [skip ci]"
+            git push origin HEAD
+          fi

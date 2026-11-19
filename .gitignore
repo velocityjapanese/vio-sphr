@@ -1,0 +1,35 @@
+# Environment & credentials
+.env
+.env.local
+token_*.json
+credentials*.json
+client_secrets*.json
+
+# Heavy media & renders
+output/
+*.mp4
+*.wav
+*.mid
+*.xml
+*.svg
+temp_*
+_thumb_raw.jpg
+
+# SoundFonts (large; fetched and cached in CI)
+soundfonts/*.sf2
+soundfonts/*.sf3
+!soundfonts/ATTRIBUTION.txt
+
+# Local tool binaries
+bin/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv
+venv/
+longform_history.json
+
+# OS specific
+.DS_Store
+Thumbs.db
