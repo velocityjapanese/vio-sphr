@@ -1,6 +1,8 @@
 # ViolinSpheric (`vio-sphr`)
 
 **Repository:** https://github.com/kreggscode/vio-sphr
+**Channel:** https://www.youtube.com/channel/UCWODeubE_VQ4Wyrk1zwLEVA
+**Schedule:** daily at 08:00 UTC (one original suite per run)
 
 A fully automated, daily long-form music channel: every run composes a brand-new
 original violin + piano suite, renders it in 1080p with a photoreal violin whose
@@ -168,6 +170,13 @@ The same emblem is used in every video's corner watermark and in thumbnails.
 
 ## Publishing behavior
 
+- New YouTube channels can only upload videos up to 15 minutes until phone
+  verification is complete. Verify the channel, or run with `--minutes 10`,
+  until then. The pipeline uses the real rendered duration in the title.
+- If the Google Cloud OAuth consent screen is still in **Testing**, refresh
+  tokens expire after 7 days. Publish the app (or keep re-authorising) for
+  unattended daily runs; the preflight fails before rendering when a token is
+  dead.
 - The pipeline fails fast if the YouTube refresh token is missing or revoked,
   instead of rendering first and losing the run.
 - Uploads are bounded (`PIA_YT_UPLOAD_TIMEOUT_SEC`, `PIA_YT_MAX_CHUNKS`) so a
