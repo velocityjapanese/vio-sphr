@@ -14,6 +14,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 
 from config import FFMPEG, FINAL_EXPORT_DIR, OUTPUT_DIR
 from render.scene import load_font, palette
+from render.score_layer import WIN_X, WIN_Y, WIN_W, WIN_H
 
 TW, TH = 1280, 720
 TEXT_X = 792
@@ -42,6 +43,17 @@ def _hero_section(meta):
         if s.get("role") == "climax":
             return s
     return sections[min(2, len(sections) - 1)] if sections else None
+
+
+def _extract_score_frame(video_path, meta):
+    """A mid-movement frame whose paper score window holds a full system."""
+    section = _hero_section(meta)
+    t = float(section["start"]) + 3.0 if section else 5.0
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out = os.path.join(OUTPUT_DIR, "_thumb_score_frame.jpg")
+    subprocess.run([FFMPEG, "-y", "-v", "error", "-ss", f"{t:.2f}", "-i", video_path,
+                    "-frames:v", "1", "-q:v", "2", out], check=False)
+    return out
 
 
 def _extract_hero(video_path, meta):
@@ -208,12 +220,19 @@ def create_violinspheric_thumbnail(video_path, output_thumb_path, hook_dict=None
     # full-resolution frame, lift the contrast, and present them as a framed
     # card above the title column.
     CARD_X, CARD_Y, CARD_W = 358, 92, 810
-    src = full.crop((int(full.width * 0.515), int(full.height * 0.088),
-                     int(full.width * 0.96), int(full.height * 0.28)))
+    # Paper score card from a mid-movement frame, not the hero frame.
+    score_frame_path = _extract_score_frame(video_path, meta)
+    score_frame = Image.open(score_frame_path).convert("RGB")
+    src = score_frame.crop((
+        WIN_X,
+        WIN_Y + int(WIN_H * 0.28),
+        WIN_X + WIN_W,
+        WIN_Y + int(WIN_H * 0.82),
+    ))
     card_h = int(round(src.height * CARD_W / src.width))
     src = src.resize((CARD_W, card_h), Image.Resampling.LANCZOS)
-    src = ImageEnhance.Brightness(src).enhance(1.38)
-    src = ImageEnhance.Contrast(src).enhance(1.3)
+    src = ImageEnhance.Brightness(src).enhance(1.02)
+    src = ImageEnhance.Contrast(src).enhance(1.05)
 
     card_mask = Image.new("L", (CARD_W, card_h), 0)
     ImageDraw.Draw(card_mask).rounded_rectangle((0, 0, CARD_W - 1, card_h - 1),

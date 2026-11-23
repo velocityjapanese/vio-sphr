@@ -8,8 +8,8 @@ from config import FFPROBE, FFMPEG, FPS, H, W, WORK_DIR
 from render.violin_strip import stream_section
 from render.scene import make_background, make_title_card
 from render.score_cursor import build_cursor_video
-from render.score_layer import (CROP_EXPR, FRAME_PAD, PANEL_X, PANEL_Y, WIN_H,
-                                WIN_W, WIN_X, WIN_Y, build_score_assets)
+from render.score_layer import (FRAME_PAD, PANEL_X, PANEL_Y, WIN_H, WIN_W,
+                                WIN_X, WIN_Y, build_score_assets)
 
 ENC_ARGS = [
     "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
@@ -56,9 +56,10 @@ def _encode(section, notes, paths, seed, score=None, cursor=None):
     score_chain = ""
     final_label = "v2"
     if score:
+        crop_expr = score[3]
         parts = [
             "[3:v]format=rgba,loop=loop=-1:size=1:start=0,"
-            f"crop={WIN_W}:{WIN_H}:0:{CROP_EXPR},"
+            f"crop={WIN_W}:{WIN_H}:0:'{crop_expr}',"
             f"fade=t=out:st={out_st:.2f}:d=1.3:alpha=1[score]; ",
             "[4:v]format=rgba,loop=loop=-1:size=1:start=0,"
             f"fade=t=out:st={out_st:.2f}:d=1.3:alpha=1[scoref]; ",
