@@ -345,9 +345,9 @@ def run_pipeline(minutes=15, force_yt=None, dry_run=False, video_path=None):
     seed = meta.get("seed")
     attribution = meta.get(
         "attribution",
-        "Original composition. Violin samples: MuseScore_General SoundFont by S. Christian "
-        "Collins, MIT licence; piano samples: Salamander Grand Piano V3 by Alexander Holm, "
-        "CC BY 3.0; audio rendered with FluidSynth."
+        "Original composition. Piano samples: Salamander Grand Piano V3 by "
+        "Alexander Holm, CC BY 3.0 "
+        "(https://creativecommons.org/licenses/by/3.0/)."
     )
     if seed is not None:
         print(f"[SEED] {seed}  |  {song_title}")
