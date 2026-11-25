@@ -257,5 +257,42 @@
       }
     ],
     "timestamp": "2026-11-24T19:41:34.962475+00:00"
+  },
+  {
+    "video_file": "ViolinSpheric_15min_20261125_183353.mp4",
+    "youtube_id": "2H7AeOaqSRE",
+    "youtube_url": "https://youtu.be/2H7AeOaqSRE",
+    "facebook_id": null,
+    "facebook_url": null,
+    "title": "15 Min Relaxing Violin & Piano | Hymn of the Paper Lanterns · Original Cinematic (HD)",
+    "piece_title": "Hymn of the Paper Lanterns",
+    "seed": 1759271868,
+    "chapters": [
+      {
+        "time": "00:00",
+        "title": "I. Ascent"
+      },
+      {
+        "time": "02:56",
+        "title": "II. Drift"
+      },
+      {
+        "time": "05:30",
+        "title": "III. Horizon"
+      },
+      {
+        "time": "07:50",
+        "title": "IV. Embers"
+      },
+      {
+        "time": "10:35",
+        "title": "V. Radiance"
+      },
+      {
+        "time": "12:35",
+        "title": "VI. Snowfall"
+      }
+    ],
+    "timestamp": "2026-11-25T18:51:14.620705+00:00"
   }
 ]
